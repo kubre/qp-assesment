@@ -29,13 +29,13 @@ app.get("/", (_, res) => {
 // usersRouter.get("/register", (req, res) => { });
 // app.use("/users", usersRouter);
 
-const CreateItemRequest = z.object({
+const AddOrUpdateItem = z.object({
     name: z.string().min(1),
     price: z.number().min(0),
     quantity: z.number().min(0),
 });
 
-type Item = z.infer<typeof CreateItemRequest> & { id: number };
+type Item = z.infer<typeof AddOrUpdateItem> & { id: number };
 
 
 app.use(express.json());
@@ -64,8 +64,8 @@ function validate(schema: z.Schema) {
 
 
 const itemsRouter = express.Router();
-itemsRouter.post("/", validate(CreateItemRequest), (_, res) => {
-    const data = res.locals as z.infer<typeof CreateItemRequest>;
+itemsRouter.post("/", validate(AddOrUpdateItem), (_, res) => {
+    const data = res.locals as z.infer<typeof AddOrUpdateItem>;
 
     const stmt = db.prepare("INSERT INTO items (name, price, quantity) VALUES (@name, @price, @quantity)");
     if (stmt.run(data).changes === 0) {
@@ -122,7 +122,26 @@ itemsRouter.get("/:id", (req, res) => {
         data: item,
     });
 });
-// itemsRouter.put("/:id", (req, res) => { });
+itemsRouter.put("/:id", validate(AddOrUpdateItem), (req, res) => {
+    const data = res.locals as z.infer<typeof AddOrUpdateItem>;
+
+    console.log(data);
+    const stmt = db.prepare("UPDATE items SET name = @name, price = @price, quantity = @quantity WHERE id = @id");
+    const changes = stmt.run({ id: req.params.id, ...data }).changes;
+    if (changes === 0) {
+        return res.status(500).json({
+            type: "error",
+            status: 500,
+            message: `Failed to update item with id ${req.params.id}`,
+        });
+    }
+
+    return res.status(200).json({
+        type: "success",
+        status: 200,
+        data: data,
+    });
+});
 // itemsRouter.delete("/:id", (req, res) => { });
 app.use("/items", itemsRouter);
 
