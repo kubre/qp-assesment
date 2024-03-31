@@ -85,7 +85,13 @@ itemsRouter.post("/", validate(AddOrUpdateItem), (_, res) => {
 
 // Simple paginated get all API
 itemsRouter.get("/", (req, res) => {
-    const fromId = parseInt(String(req.query.fromId)) || 0;
+    const idParsed = z.number({ coerce: true })
+        .min(1)
+        .default(0)
+        .safeParse(req.query.fromId);
+    let fromId = idParsed.success ? idParsed.data : 0;
+
+
     const items = db.prepare("SELECT * FROM items where id >= @fromId limit 11")
         .all({ fromId }) as Item[];
 
@@ -124,10 +130,17 @@ itemsRouter.get("/:id", (req, res) => {
 });
 itemsRouter.put("/:id", validate(AddOrUpdateItem), (req, res) => {
     const data = res.locals as z.infer<typeof AddOrUpdateItem>;
+    const idParsed = z.number({ coerce: true }).safeParse(req.params.id);
+    if (!idParsed.success) {
+        return res.status(400).json({
+            type: "error",
+            status: 400,
+            message: `Invalid id ${req.params.id}`,
+        });
+    }
 
-    console.log(data);
     const stmt = db.prepare("UPDATE items SET name = @name, price = @price, quantity = @quantity WHERE id = @id");
-    const changes = stmt.run({ id: req.params.id, ...data }).changes;
+    const changes = stmt.run({ id: idParsed.data, ...data }).changes;
     if (changes === 0) {
         return res.status(500).json({
             type: "error",
@@ -142,7 +155,35 @@ itemsRouter.put("/:id", validate(AddOrUpdateItem), (req, res) => {
         data: data,
     });
 });
-// itemsRouter.delete("/:id", (req, res) => { });
+itemsRouter.delete("/:id", (req, res) => {
+    const idParsed = z.number({ coerce: true }).safeParse(req.params.id);
+    if (!idParsed.success) {
+        return res.status(400).json({
+            type: "error",
+            status: 400,
+            message: `Invalid id ${req.params.id}`,
+        });
+    }
+
+    const getStmt = db.prepare("SELECT * FROM items WHERE id = @id");
+    const item = getStmt.get({ id: idParsed.data }) as Item;
+
+    const stmt = db.prepare("DELETE FROM items WHERE id = @id");
+    const changes = stmt.run({ id: idParsed.data }).changes;
+    if (changes === 0) {
+        return res.status(500).json({
+            type: "error",
+            status: 500,
+            message: `Failed to delete item with id ${req.params.id}`,
+        });
+    }
+
+    return res.status(200).json({
+        type: "success",
+        status: 200,
+        data: item,
+    });
+});
 app.use("/items", itemsRouter);
 
 // const ordersRouter = express.Router();
