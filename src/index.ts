@@ -21,6 +21,24 @@ app.get("/", (_, res) => {
     res.send("Nothing here to check 🤷🏽‍♀️");
 });
 
+// TODO
+const usersRouter = express.Router();
+usersRouter.get("/login", (req, res) => { });
+usersRouter.get("/register", (req, res) => { });
+app.use("/users", usersRouter);
+
+const itemsRouter = express.Router();
+itemsRouter.get("/", (req, res) => { });
+itemsRouter.get("/:id", (req, res) => { });
+itemsRouter.post("/", (req, res) => { });
+itemsRouter.put("/:id", (req, res) => { });
+itemsRouter.delete("/:id", (req, res) => { });
+app.use("/items", itemsRouter);
+
+const ordersRouter = express.Router();
+ordersRouter.get("/", (req, res) => { });
+ordersRouter.post("/", (req, res) => { });
+
 const PORT = 8000;
 app.listen(PORT, async () => {
     migrate();
