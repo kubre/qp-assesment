@@ -50,8 +50,8 @@ function validate(schema: z.Schema) {
                 .map(([key, value]) => `${key} is ${value}`)
                 .join(" and ");
             return res.status(400).json({
-                status: "error",
-                statusCode: 400,
+                type: "error",
+                status: 400,
                 error: errors,
                 message: message,
             });
@@ -70,15 +70,15 @@ itemsRouter.post("/", validate(CreateItemRequest), (_, res) => {
     const stmt = db.prepare("INSERT INTO items (name, price, quantity) VALUES (@name, @price, @quantity)");
     if (stmt.run(data).changes === 0) {
         return res.status(500).json({
-            status: "error",
-            statusCode: 500,
+            type: "error",
+            status: 500,
             message: "Failed to create item",
         });
     }
 
     return res.status(201).json({
-        status: "success",
-        statusCode: 201,
+        type: "success",
+        status: 201,
         data: data,
     });
 });
@@ -96,15 +96,32 @@ itemsRouter.get("/", (req, res) => {
     }
 
     return res.json({
-        status: "success",
-        statusCode: 200,
+        type: "success",
+        status: 200,
         data: {
             items: items,
             nextId: nextId,
         },
     });
 });
-// itemsRouter.get("/:id", (req, res) => { });
+itemsRouter.get("/:id", (req, res) => {
+    const item = db.prepare("SELECT * FROM items WHERE id = @id")
+        .get({ id: req.params.id }) as Item;
+
+    if (!item) {
+        return res.status(404).json({
+            type: "error",
+            status: 404,
+            message: "Item not found",
+        });
+    }
+
+    return res.json({
+        type: "success",
+        status: 200,
+        data: item,
+    });
+});
 // itemsRouter.put("/:id", (req, res) => { });
 // itemsRouter.delete("/:id", (req, res) => { });
 app.use("/items", itemsRouter);
