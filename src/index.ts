@@ -35,6 +35,9 @@ const CreateItemRequest = z.object({
     quantity: z.number().min(0),
 });
 
+type Item = z.infer<typeof CreateItemRequest> & { id: number };
+
+
 app.use(express.json());
 
 function validate(schema: z.Schema) {
@@ -79,7 +82,28 @@ itemsRouter.post("/", validate(CreateItemRequest), (_, res) => {
         data: data,
     });
 });
-// itemsRouter.get("/", (req, res) => { });
+
+// Simple paginated get all API
+itemsRouter.get("/", (req, res) => {
+    const fromId = parseInt(String(req.query.fromId)) || 0;
+    const items = db.prepare("SELECT * FROM items where id >= @fromId limit 11")
+        .all({ fromId }) as Item[];
+
+    // Pass this nextId to api as query param to get next 10 items
+    let nextId = items?.[10]?.id ?? null;
+    if (items.length === 11) {
+        items.pop();
+    }
+
+    return res.json({
+        status: "success",
+        statusCode: 200,
+        data: {
+            items: items,
+            nextId: nextId,
+        },
+    });
+});
 // itemsRouter.get("/:id", (req, res) => { });
 // itemsRouter.put("/:id", (req, res) => { });
 // itemsRouter.delete("/:id", (req, res) => { });
