@@ -1,5 +1,7 @@
 # Follow to run this
 
+NODEJS 18 REQUIRED
+
 1. copy .env.example to .env
 2. run `npm install`
 3. run `npm run dev`
