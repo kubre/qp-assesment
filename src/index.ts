@@ -3,6 +3,7 @@ import express from "express";
 
 import { migrate } from "./db.js";
 import { itemsRouter } from "./items.js";
+import { ordersRouter } from "./orders.js";
 
 /*
 Design API endpoints
@@ -33,9 +34,7 @@ app.use("/items", itemsRouter);
 // usersRouter.get("/register", (req, res) => { });
 // app.use("/users", usersRouter);
 
-// const ordersRouter = express.Router();
-// ordersRouter.get("/", (req, res) => { });
-// ordersRouter.post("/", (req, res) => { });
+app.use("/orders", ordersRouter);
 
 app.listen(process.env.PORT, async () => {
     migrate();
