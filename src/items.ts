@@ -1,12 +1,12 @@
 import express from "express";
 import { db } from "./db.js";
 import { AddOrUpdateItem, type Item } from "./schema.js";
-import { validate } from "./utils.js";
+import { validate, authenticated, adminAuthorized } from "./utils.js";
 import { z } from "zod";
 
 export const itemsRouter = express.Router();
 
-itemsRouter.post("/", validate(AddOrUpdateItem), (_, res) => {
+itemsRouter.post("/", authenticated, adminAuthorized, validate(AddOrUpdateItem), (_, res) => {
     const data = res.locals as z.infer<typeof AddOrUpdateItem>;
 
     const stmt = db.prepare("INSERT INTO items (name, price, quantity) VALUES (@name, @price, @quantity)");
@@ -26,7 +26,7 @@ itemsRouter.post("/", validate(AddOrUpdateItem), (_, res) => {
 });
 
 // Simple paginated get all API
-itemsRouter.get("/", (req, res) => {
+itemsRouter.get("/", authenticated, (req, res) => {
     const idParsed = z.number({ coerce: true })
         .min(1)
         .default(0)
@@ -53,7 +53,7 @@ itemsRouter.get("/", (req, res) => {
     });
 });
 
-itemsRouter.get("/:id", (req, res) => {
+itemsRouter.get("/:id", authenticated, (req, res) => {
     const item = db.prepare("SELECT * FROM items WHERE id = @id")
         .get({ id: req.params.id }) as Item;
 
@@ -72,7 +72,7 @@ itemsRouter.get("/:id", (req, res) => {
     });
 });
 
-itemsRouter.put("/:id", validate(AddOrUpdateItem), (req, res) => {
+itemsRouter.put("/:id", authenticated, adminAuthorized, validate(AddOrUpdateItem), (req, res) => {
     const data = res.locals as z.infer<typeof AddOrUpdateItem>;
     const idParsed = z.number({ coerce: true }).safeParse(req.params.id);
     if (!idParsed.success) {
@@ -100,7 +100,7 @@ itemsRouter.put("/:id", validate(AddOrUpdateItem), (req, res) => {
     });
 });
 
-itemsRouter.delete("/:id", (req, res) => {
+itemsRouter.delete("/:id", authenticated, adminAuthorized, (req, res) => {
     const idParsed = z.number({ coerce: true }).safeParse(req.params.id);
     if (!idParsed.success) {
         return res.status(400).json({

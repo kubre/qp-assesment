@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import type { Database as TDatabase } from "better-sqlite3";
+import bcrypt from "bcryptjs";
 
 export const db: TDatabase = new Database(process.env.DB_PATH, { verbose: console.log });
 db.pragma("journal_mode = WAL");
@@ -41,12 +42,30 @@ export function migrate() {
     db.prepare(`
         CREATE INDEX IF NOT EXISTS idx_orders_orderId ON orders(orderId)
     `).run();
+}
 
+export async function seedDemoUsers() {
     // create admin user if not exists
     const admin = db.prepare("SELECT * FROM users WHERE role = 'admin'").get();
     if (!admin) {
         console.log("No admin user found, creating one...");
         db.prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
-            .run(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD, "admin");
+            .run(
+                process.env.ADMIN_USERNAME,
+                await bcrypt.hash(process.env.ADMIN_PASSWORD, 10),
+                "admin"
+            );
+    }
+
+    const user = db.prepare("SELECT * FROM users WHERE username = 'user'").get();
+    if (!user) {
+        console.log("No user user found, creating one...");
+        db.prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
+            .run(
+                process.env.DEMOUSER_USERNAME,
+                await bcrypt.hash(process.env.DEMOUSER_PASSWORD, 10),
+                "user"
+            );
     }
 }
+

@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+
+export const LoginSchema = z.object({
+    username: z.string(),
+    password: z.string(),
+});
+
+export type User = {
+    id: number;
+    username: string;
+    password: string | undefined;
+    role: "admin" | "user";
+    createdAt: string;
+};
+
 export const AddOrUpdateItem = z.object({
     name: z.string().min(1),
     price: z.number().min(0),
